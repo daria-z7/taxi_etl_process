@@ -1,0 +1,36 @@
+create table dim_drivers (
+  personnel_num char(9),
+  start_dt timestamp(0),
+  last_name char(20),
+  first_name char(20),
+  middle_name char(20),
+  birth_dt date,
+  card_num char(19),
+  driver_license_num char(12),
+  driver_license_dt date,
+  deleted_flag char(1),
+  end_dt timestamp(0),
+  primary key (personnel_num,start_dt)
+)
+
+create table  fact_waybills (
+  waybill_num char(12),
+  driver_pers_num char(9),
+  car_plate_num char(9),
+  work_start_dt timestamp(0),
+  work_end_dt timestamp(0),
+  issue_dt date,
+  foreign key (driver_pers_num) references dim_drivers(personnel_num),
+  foreign key (car_plate_num) references dim_cars(plate_num),
+  primary key (waybill_num) 
+)
+
+create table dim_cars(
+  plate_num char(9),
+  start_dt timestamp(0),
+  model_name char(20),
+  revision_dt date,
+  deleted_flag char(1),
+  end_dt timestamp(0),
+  primary key (plate_num,start_dt)
+)
