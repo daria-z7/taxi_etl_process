@@ -1,11 +1,13 @@
 import psycopg2
 
-
+shema = 'dwh_saint_petersburg'
 conn = psycopg2.connect(host='de-edu-db.chronosavant.ru',
-                        port=5432,
-                        database='dwh',
-                        user='dwh_moscow',
-                        password='dwh_moscow_password')
+                            port=5432,
+                            database='dwh',
+                            user='dwh_saint_petersburg',
+                            password='dwh_saint_petersburg_6na1uFWY',
+                            options=f'-c search_path={shema}',
+                        )
 
 cur = conn.cursor()
 

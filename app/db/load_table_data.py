@@ -13,7 +13,7 @@ conn = psycopg2.connect(
 )
 cur = conn.cursor()
 with cur as cur:
-    cur.execute('SELECT * FROM movement WHERE movement_id = 1')
+    cur.execute('SELECT * FROM drivers')
     print(cur.fetchall())
 cur.close()
 conn.close()
