@@ -1,8 +1,6 @@
 import psycopg2
 import pandas as pd
 
-# from db_functions import add_data_to_drivers, get_all_drivers, add_data_to_drivers, get_all_drivers
-
 
 def create_conn() -> str:
     shema = 'main'
@@ -23,11 +21,11 @@ def load_new_driver_records():
     with cur as cur:
         cur.execute("SELECT * FROM drivers WHERE DATE(update_dt) = (CURRENT_DATE - INTEGER '1')")
         query = cur.fetchall()
-    df = pd.DataFrame(query, columns= ['last_name', 'first_name', 'middle_name', 'birth_dt', 'card_num', 'driver_license', 'driver_valid_to'])
+    df = pd.DataFrame(query, columns= ['driver_license_num', 'first_name', 'last_name',  'middle_name', 'driver_valid_to', 'card_num', 'update_dt', 'birth_dt'])
     #cur.close()
     conn.close()
     #print(type(df))
-    return print(df)
+    return df
 
 
 def create_conn_2():
@@ -41,16 +39,16 @@ def create_conn_2():
                         )
     return conn_2
 
-def check_drivers_record_exists(personnel_num) -> bool:
+def check_drivers_record_exists(driver_license_num) -> bool:
     conn = create_conn_2()
     cur = conn.cursor()
     with cur as cur:
-        cur.execute(f"SELECT personnel_num FROM dim_drivers WHERE personnel_num LIKE '{personnel_num}' ORDER BY revision_dt DESC LIMIT 1")
-        trans_id = cur.fetchone()
-        # print(trans_id[0])
+        cur.execute(f"SELECT card_num FROM dim_drivers WHERE driver_license_num LIKE '{driver_license_num}' ORDER BY personnel_num DESC LIMIT 1")
+        driver_card = cur.fetchone()
+        
     cur.close()
     conn.close()
-    return False if trans_id is None else True
+    return False if driver_card is None else driver_card[0]
 
 def add_data_to_dim_drivers(df: list):
     if not df.empty:
@@ -58,44 +56,45 @@ def add_data_to_dim_drivers(df: list):
         cur = conn.cursor()
         for index, row in df.iterrows():
             # print(row['finished_flag'])
-            if not check_drivers_record_exists(row['personnel_num']):
-                print('hi')
+            db_card = check_drivers_record_exists(row['driver_license_num'])
+            if not db_card:
+                print('good')
                 insert_query = """
-                            INSERT INTO  dim_drivers (last_name, first_name, middle_name, birth_dt, card_num, driver_license, driver_license_dt)
-                            VALUES (%s,%s,%s,%s,%s,%s,%s)
+                            INSERT INTO  dim_drivers (start_dt, last_name, first_name, middle_name, birth_dt, card_num, driver_license_num, driver_license_dt)
+                            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
                             """
                 record_to_insert = (
-                    row['last_name'],
-                    row['first_name'],
-                    row['middle_name'],
+                    row['update_dt'],
+                    row['last_name'].strip(),
+                    row['first_name'].strip(),
+                    row['middle_name'].strip(),
                     row['birth_dt'],
-                    row['card_num'],
-                    row['driver_license'],
-                    row['driver_license_dt']
+                    row['card_num'].strip(),
+                    row['driver_license_num'].strip(),
+                    row['driver_valid_to']
                 )
                 cur.execute(insert_query, record_to_insert)
-            else:
+            elif db_card != row['card_num']:
                 print("!")
                 update_query = """
                                UPDATE  dim_drivers
                                SET end_dt = %s
-                               WHERE personnel_num = %s
-                               ORDER BY driver_license_dt DESC
-                               LIMIT 1
+                               WHERE driver_license_num = %s AND end_dt is Null
                                """
-                cur.execute(update_query, (row['start_dt'], row['personnel_num']))
+                cur.execute(update_query, (row['update_dt'], row['driver_license_num']))
                 insert_query = """
-                               INSERT INTO  dim_drivers (last_name, first_name, middle_name, birth_dt, card_num, driver_license, driver_license_dt)
-                               VALUES (%s,%s,%s,%s,%s,%s,%s)
+                               INSERT INTO  dim_drivers (start_dt, last_name, first_name, middle_name, birth_dt, card_num, driver_license_num, driver_license_dt)
+                               VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
                                """
                 record_to_insert = (
-                    row['last_name'],
-                    row['first_name'],
-                    row['middle_name'],
+                    row['update_dt'],
+                    row['last_name'].strip(),
+                    row['first_name'].strip(),
+                    row['middle_name'].strip(),
                     row['birth_dt'],
-                    row['card_num'],
-                    row['driver_license'],
-                    row['driver_license_dt']
+                    row['card_num'].strip(),
+                    row['driver_license_num'].strip(),
+                    row['driver_valid_to']
                 )
                 cur.execute(insert_query, record_to_insert)
         try:
@@ -106,3 +105,13 @@ def add_data_to_dim_drivers(df: list):
             cur.close()
         cur.close()
     return
+
+
+if __name__ == "__main__":
+    # df = load_new_car_records()
+    # print(df)
+    # add_data_to_cars(df=df)
+    # get_all_cars()
+    df = load_new_driver_records()
+    print(df)
+    add_data_to_dim_drivers(df)
