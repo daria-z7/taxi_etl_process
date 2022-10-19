@@ -33,7 +33,6 @@ def load_data(days_back: int):
     try:
         """Загрузка данных по водителям."""
         df_drivers = load_new_driver_records(days_back=days_back)
-        # print(df_drivers)
         add_data_to_dim_drivers(df_drivers)
         logging.info(f'Данные dim_drivers загружены ({yesterday_dt}).')
     except Exception as error:
@@ -43,7 +42,6 @@ def load_data(days_back: int):
     try:
         """Загрузка данных по машинам."""
         df_cars = load_new_car_records(days_back=days_back)
-        #print(df_cars)
         add_data_to_cars(df_cars)
         logging.info(f'Данные dim_cars загружены ({yesterday_dt}).')
     except Exception as error:
@@ -62,7 +60,6 @@ def load_data(days_back: int):
     try:
         """Загрузка данных по путевым листам."""
         df_waybills = get_waybills_data(days_back=days_back)
-        #print(df_waybills)
         table = 'fact_waybills'
         add_data_to_waybill(df=df_waybills, table=table)
         logging.info(f'Данные fact_waybills загружены ({yesterday_dt}).')
@@ -101,4 +98,3 @@ def load_data(days_back: int):
 if __name__ == "__main__":
     days_back = 1
     load_data(days_back=days_back)
-    #print(get_all_cars())
