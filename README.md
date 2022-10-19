@@ -56,7 +56,7 @@ pip install -r requirements.txt
 ```
 FTP_TLS_HOST=de-edu-db.chronosavant.ru
 FTPS_USER=etl_tech_user
-FTPS_PASSWORD=etl_tech_user_password
+FTPS_PASSWORD=# укажите пароль
 SOURCE_DB_SHEMA=main
 SOURCE_DB_HOST=de-edu-db.chronosavant.ru
 SOURCE_DB_PORT=5432
