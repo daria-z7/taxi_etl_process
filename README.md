@@ -61,13 +61,13 @@ SOURCE_DB_HOST=de-edu-db.chronosavant.ru
 SOURCE_DB_PORT=5432
 SOURCE_DB_NAME=taxi
 SOURCE_DB_USER=etl_tech_user
-SOURCE_DB_PASSWORD= #
+SOURCE_DB_PASSWORD= # укажите пароль
 WH_DB_SHEMA=dwh_saint_petersburg
 WH_DB_HOST=de-edu-db.chronosavant.ru
 WH_DB_PORT=5432
 WH_DB_NAME=dwh
 WH_DB_USER=dwh_saint_petersburg
-WH_DB_PASSWORD= #
+WH_DB_PASSWORD= # укажите пароль
 ```
 
 Перейдите в папку app:
