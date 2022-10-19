@@ -5,7 +5,7 @@ import pandas as pd
 
 from create_ftps_conn import create_ftps
 from functions import formate_date, yesterday
-from db_functions import get_pers_num, get_last_trans_id, add_data_to_payments
+from db_functions import get_pers_num, get_last_trans_id, add_data_to_payments, add_data_to_waybill, get_all_waybills
 
 
 def get_waybills_data():
@@ -84,9 +84,14 @@ def get_payment_data():
     df['transaction_dt'] = df['transaction_dt'].astype('datetime64[ns]')
     return df
 
-print(get_payment_data())
-# print(get_waybills_data())
-# if __name__ == "__main__":
-#     df = get_payment_data()
-#     table = 'fact_payments'
-#     add_data_to_payments(df=df, table=table)
+
+if __name__ == "__main__":
+    df = get_payment_data()
+    table = 'fact_payments'
+    print(df)
+    add_data_to_payments(df=df, table=table)
+    #get_all_waybills()
+    # df = get_waybills_data()
+    # print(df)
+    # table = 'fact_waybills'
+    # add_data_to_waybill(df=df, table=table)

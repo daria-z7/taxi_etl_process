@@ -13,4 +13,4 @@ def formate_date(d_month: str, d_day: str) -> str:
 
 
 def yesterday() -> str:
-    return str(today_date + timedelta(days=-1))
+    return str(today_date + timedelta(days=-2))

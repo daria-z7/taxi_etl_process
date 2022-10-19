@@ -1,7 +1,7 @@
 import psycopg2
 import pandas as pd
 
-from db_functions import add_data_to_cars, get_all_cars, add_data_to_clients, get_all_clients
+from db_functions import add_data_to_cars, get_all_cars, add_data_to_clients, get_all_clients, delete_all_clients
 
 
 def create_conn() -> str:
@@ -38,7 +38,7 @@ def load_new_client_records():
     conn  = create_conn()
     cur = conn.cursor()
     with cur as cur:
-        cur.execute("SELECT * FROM rides WHERE DATE(dt) = (CURRENT_DATE - INTEGER '6')")
+        cur.execute("SELECT * FROM rides WHERE DATE(dt) = (CURRENT_DATE - INTEGER '1')")
         query = cur.fetchall()
     df = pd.DataFrame(query, columns= [
         'ride_id',
@@ -58,11 +58,12 @@ def load_new_client_records():
 
 
 if __name__ == "__main__":
-    # df = load_new_car_records()
-    # print(df)
-    # add_data_to_cars(df=df)
-    # get_all_cars()
-    df = load_new_client_records()
+    df = load_new_car_records()
     print(df)
+    #add_data_to_cars(df=df)
+    # get_all_cars()
+    #df = load_new_client_records()
+    # print(df)
     #add_data_to_clients(df=df)
-    get_all_clients()
+    #get_all_clients()
+    # delete_all_clients()

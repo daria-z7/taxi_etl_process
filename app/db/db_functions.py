@@ -13,7 +13,7 @@ def create_conn():
     return conn
 
 
-def get_pers_num(license: str) -> int:
+def get_pers_num(license: str) -> bool | int:
     conn = create_conn()
     cur = conn.cursor()
     with cur as cur:
@@ -22,7 +22,7 @@ def get_pers_num(license: str) -> int:
         # print(cur.fetchone())
     cur.close()
     conn.close()
-    return 0 if pers_num is None else pers_num[0]
+    return False if pers_num is None else pers_num[0]
 
 def get_last_trans_id() -> int:
     conn = create_conn()
@@ -65,6 +65,24 @@ def get_all_clients():
     cur.close()
     conn.close()
 
+def get_all_waybills():
+    conn = create_conn()
+    cur = conn.cursor()
+    with cur as cur:
+        cur.execute(f"SELECT * FROM fact_waybills")
+        print(cur.fetchall())
+    cur.close()
+    conn.close()
+
+def delete_all_clients():
+    conn = create_conn()
+    cur = conn.cursor()
+    with cur as cur:
+        cur.execute(f"DELETE FROM dim_clients")
+        conn.commit()
+    cur.close()
+    conn.close()
+
 
 def check_client_card_changed(client_phone: str) -> bool | str:
     conn = create_conn()
@@ -79,19 +97,38 @@ def check_client_card_changed(client_phone: str) -> bool | str:
 
 
 def add_data_to_payments(df: list, table: str):
-    conn = create_conn()
-    cur = conn.cursor()
-    tuples = [tuple(x) for x in df.to_numpy()]
-    cols = ','.join(list(df.columns))
-    query = "INSERT INTO %s(%s) VALUES (%%s, %%s, %%s, %%s)" % (table, cols)
-    try:
-        cur.executemany(query, tuples)
-        conn.commit()
-    except (Exception, psycopg2.DatabaseError) as error:
-        print(error)
-        conn.rollback()
+    if not df.empty:
+        conn = create_conn()
+        cur = conn.cursor()
+        tuples = [tuple(x) for x in df.to_numpy()]
+        cols = ','.join(list(df.columns))
+        query = "INSERT INTO %s(%s) VALUES (%%s, %%s, %%s, %%s)" % (table, cols)
+        try:
+            cur.executemany(query, tuples)
+            conn.commit()
+        except (Exception, psycopg2.DatabaseError) as error:
+            print(error)
+            conn.rollback()
+            cur.close()
         cur.close()
-    cur.close()
+    return
+
+
+def add_data_to_waybill(df: list, table: str):
+    if not df.empty:
+        conn = create_conn()
+        cur = conn.cursor()
+        tuples = [tuple(x) for x in df.to_numpy()]
+        cols = ','.join(list(df.columns))
+        query = "INSERT INTO %s(%s) VALUES (%%s, %%s, %%s, %%s, %%s, %%s)" % (table, cols)
+        try:
+            cur.executemany(query, tuples)
+            conn.commit()
+        except (Exception, psycopg2.DatabaseError) as error:
+            print(error)
+            conn.rollback()
+            cur.close()
+        cur.close()
     return
 
 
@@ -104,8 +141,8 @@ def add_data_to_cars(df: list):
             if not check_car_record_exists(row['plate_num']):
                 print('hi')
                 insert_query = """
-                            INSERT INTO  dim_cars (plate_num, start_dt, model_name, revision_dt, deleted_flag, end_dt)
-                            VALUES (%s,%s,%s,%s,%s,%s)
+                            INSERT INTO  dim_cars (plate_num, start_dt, model_name, revision_dt, deleted_flag)
+                            VALUES (%s,%s,%s,%s,%s)
                             """
                 record_to_insert = (
                     row['plate_num'],
@@ -113,7 +150,6 @@ def add_data_to_cars(df: list):
                     row['model'].strip(),
                     row['revision_dt'],
                     row['finished_flag'],
-                    None,
                 )
                 cur.execute(insert_query, record_to_insert)
             else:
@@ -121,14 +157,12 @@ def add_data_to_cars(df: list):
                 update_query = """
                                UPDATE  dim_cars
                                SET end_dt = %s
-                               WHERE plate_num = %s
-                               ORDER BY revision_dt DESC
-                               LIMIT 1
+                               WHERE plate_num = %s AND end_dt is NULL
                                """
                 cur.execute(update_query, (row['update_dt'], row['plate_num']))
                 insert_query = """
-                               INSERT INTO  dim_cars (plate_num, start_dt, model_name, revision_dt, deleted_flag, end_dt)
-                               VALUES (%s,%s,%s,%s,%s,%s)
+                               INSERT INTO  dim_cars (plate_num, start_dt, model_name, revision_dt, deleted_flag)
+                               VALUES (%s,%s,%s,%s,%s)
                                """
                 record_to_insert = (
                     row['plate_num'],
@@ -136,7 +170,6 @@ def add_data_to_cars(df: list):
                     row['model'].strip(),
                     row['revision_dt'],
                     row['finished_flag'],
-                    None,
                 )
                 cur.execute(insert_query, record_to_insert)
         try:
@@ -159,44 +192,48 @@ def add_data_to_clients(df: list):
             if not db_card:
                 # print('hi')
                 insert_query = """
-                            INSERT INTO  dim_clients (phone_num, start_dt, card_num, deleted_flag, end_dt)
-                            VALUES (%s,%s,%s,%s,%s)
+                            INSERT INTO  dim_clients (phone_num, start_dt, card_num, deleted_flag)
+                            VALUES (%s,%s,%s,%s)
                             """
                 record_to_insert = (
                     row['client_phone'].strip(),
                     row['dt'],
                     row['card_num'].strip(),
-                    'N',
-                    None,
+                    0,
                 )
                 cur.execute(insert_query, record_to_insert)
-            elif row['card_num'] != db_card:
-                print("!")
-                # update_query = """
-                #                UPDATE  dim_clients
-                #                SET end_dt = %s
-                #                WHERE phone_num = %s
-                #                ORDER BY start_dt DESC
-                #                LIMIT 1
-                #                """
-                # cur.execute(update_query, (row['dt'], row['client_phone']))
-                # insert_query = """
-                #             INSERT INTO  dim_clients (phone_num, start_dt, card_num, deleted_flag, end_dt)
-                #             VALUES (%s,%s,%s,%s,%s)
-                #             """
-                # record_to_insert = (
-                #     row['client_phone'].strip(),
-                #     row['dt'],
-                #     row['card_num'].strip(),
-                #     False,
-                #     None,
-                # )
-                # cur.execute(insert_query, record_to_insert)
-        try:
-            conn.commit()
-        except (Exception, psycopg2.DatabaseError) as error:
-            print(error)
-            conn.rollback()
-            cur.close()
+                try:
+                    conn.commit()
+                except (Exception, psycopg2.DatabaseError) as error:
+                    print(error)
+                    conn.rollback()
+                    cur.close()
+                    return
+            elif row['card_num'].strip() != db_card.strip():
+                print(row['card_num'].strip(), db_card.strip())
+                update_query = """
+                               UPDATE  dim_clients
+                               SET end_dt = %s
+                               WHERE phone_num = %s AND end_dt is NULL
+                               """
+                cur.execute(update_query, (row['dt'], row['client_phone']))
+                insert_query = """
+                            INSERT INTO  dim_clients (phone_num, start_dt, card_num, deleted_flag)
+                            VALUES (%s,%s,%s,%s)
+                            """
+                record_to_insert = (
+                    row['client_phone'].strip(),
+                    row['dt'],
+                    row['card_num'].strip(),
+                    0,
+                )
+                cur.execute(insert_query, record_to_insert)
+                try:
+                    conn.commit()
+                except (Exception, psycopg2.DatabaseError) as error:
+                    print(error)
+                    conn.rollback()
+                    cur.close()
+                    return
         cur.close()
     return
