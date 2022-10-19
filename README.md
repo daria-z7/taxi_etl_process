@@ -25,12 +25,6 @@ git clone 'ссылка на репозиторий'
 ```
 cd taxi_etl_process
 ```
-Перейдите в папку app:
-
-```
-cd app
-```
-
 Cоздайте и активируйте виртуальное окружение:
 
 ```
@@ -40,6 +34,13 @@ python -m venv venv
 ```
 source venv/Scripts/activate
 ```
+
+Перейдите в папку app:
+
+```
+cd app
+```
+
 ```
 python -m pip install --upgrade pip
 ```
