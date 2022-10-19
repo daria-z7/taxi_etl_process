@@ -12,5 +12,5 @@ def formate_date(d_month: str, d_day: str) -> str:
     return str(file_date)
 
 
-def yesterday() -> str:
-    return str(today_date + timedelta(days=-2))
+def yesterday(days_back: int) -> str:
+    return str(today_date + timedelta(days=-days_back))

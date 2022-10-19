@@ -3,12 +3,12 @@ import xml.etree.ElementTree as ET
 
 import pandas as pd
 
-from create_ftps_conn import create_ftps
-from functions import formate_date, yesterday
-from db_functions import get_pers_num, get_last_trans_id, add_data_to_payments, add_data_to_waybill, get_all_waybills
+from db.create_ftps_conn import create_ftps
+from db.functions import formate_date, yesterday
+from db.upload_table_data import get_pers_num, get_last_trans_id
 
 
-def get_waybills_data():
+def get_waybills_data(days_back: int):
     df = pd.DataFrame(columns=[
         'waybill_num',
         'driver_pers_num',
@@ -20,7 +20,7 @@ def get_waybills_data():
 
     ftps = create_ftps()
     file_list = []
-    yesterday_date = yesterday()
+    yesterday_date = yesterday(days_back=days_back)
 
     ftps.retrlines('LIST /waybills', file_list.append)
     for file in file_list:
@@ -36,11 +36,9 @@ def get_waybills_data():
                 car_plate_num = element.find('car').text
                 issue_dt = element.attrib['issuedt']
                 for snode in element.findall('driver'):
-                    # print('Driver name: ' + snode.find('name').text)
                     d_name = snode.find('name').text
                     d_license = snode.find('license').text
                     pers_num = get_pers_num(str(d_license))
-                    # print('Driver license: ' + snode.find('license').text)
                 for snode in element.findall('period'):
                     start_dt = snode.find('start').text
                     end_dt = snode.find('stop').text
@@ -49,7 +47,7 @@ def get_waybills_data():
     ftps.quit()
     return df
 
-def get_payment_data():
+def get_payment_data(days_back: int):
     df = pd.DataFrame(columns=[
         'transaction_id',
         'card_num',
@@ -59,9 +57,7 @@ def get_payment_data():
     
     ftps = create_ftps()
     file_list = []
-    yesterday_date = yesterday()
-    # print(ftps.nlst())
-    # ftps.retrlines('LIST /payments')
+    yesterday_date = yesterday(days_back=days_back)
     ftps.retrlines('LIST /payments', file_list.append)
     for file in file_list:
         file_data = str(file).split()
@@ -83,15 +79,3 @@ def get_payment_data():
     df['transaction_id'] = pd.RangeIndex(count, count + len(df)) + 1
     df['transaction_dt'] = df['transaction_dt'].astype('datetime64[ns]')
     return df
-
-
-if __name__ == "__main__":
-    df = get_payment_data()
-    table = 'fact_payments'
-    print(df)
-    add_data_to_payments(df=df, table=table)
-    #get_all_waybills()
-    # df = get_waybills_data()
-    # print(df)
-    # table = 'fact_waybills'
-    # add_data_to_waybill(df=df, table=table)
