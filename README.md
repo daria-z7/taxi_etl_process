@@ -71,12 +71,6 @@ WH_DB_USER=dwh_saint_petersburg
 WH_DB_PASSWORD= # укажите пароль
 ```
 
-Перейдите в папку app:
-
-```
-cd app
-```
-
 Запустите процесс:
 
 ```
