@@ -378,3 +378,40 @@ def add_data_to_fact_rides(df: list):
             cur.close()
         cur.close()
     return
+
+
+def add_date_to_check_load(date_dt):
+    conn = create_conn()
+    cur = conn.cursor()
+    insert_query = """
+                INSERT INTO  work_load_check (date_load)
+                VALUES (%s)
+                """
+    cur.execute(insert_query, (date_dt,))
+    try:
+        conn.commit()
+    except (Exception, psycopg2.DatabaseError) as error:
+        print(error)
+        conn.rollback()
+        cur.close()
+    cur.close()
+
+
+def check_load(date_dt):
+    conn = create_conn()
+    cur = conn.cursor()
+    with cur as cur:
+        cur.execute("""SELECT date_load
+                    FROM work_load_check
+                    order by id_load desc
+                    limit 1;""")
+        last_day_load = cur.fetchone()
+    cur.close()
+    conn.close()
+    
+    if last_day_load is None:
+        return True
+    elif str(last_day_load[0]) == str(date_dt):
+        return False
+    else:
+        return True
