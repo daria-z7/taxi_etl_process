@@ -1,8 +1,9 @@
-with avg_speed as (SELECT 
+SELECT 
 	dd.personnel_num,
 	fr.ride_id,
 	max(case when EXTRACT (MINUTE FROM fr.ride_end_dt-fr.ride_start_dt) = 0 then
-	0 else (fr.distance_val / EXTRACT (MINUTE FROM fr.ride_end_dt-fr.ride_start_dt))*60 end ) speed
+	0 else (fr.distance_val / EXTRACT (MINUTE FROM fr.ride_end_dt-fr.ride_start_dt))*60 end ) speed,
+	row_number( ) over (partition by personnel_num) - 1 violations_cnt
 	
 from fact_rides fr left join dim_drivers dd on dd.personnel_num = fr.driver_pers_num
 group by dd.personnel_num,fr.ride_id
@@ -10,9 +11,4 @@ group by dd.personnel_num,fr.ride_id
 having max(case when EXTRACT (MINUTE FROM fr.ride_end_dt-fr.ride_start_dt) = 0 then
 	0 else (fr.distance_val / EXTRACT (MINUTE FROM fr.ride_end_dt-fr.ride_start_dt))*60 end ) > 85
 				   
-order by dd.personnel_num)
-
-select
-*,
-row_number() over (partition by personnel_num) - 1 violations_cnt
-from avg_speed
+order by dd.personnel_num
