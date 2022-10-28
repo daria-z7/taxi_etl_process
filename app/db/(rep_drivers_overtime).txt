@@ -1,0 +1,6 @@
+select dd.driver_license_num, fw.issue_dt ,sum(fw.work_end_dt - fw.work_start_dt) work_hours
+from fact_waybills fw
+left join dim_drivers dd on dd.personnel_num = fw.driver_pers_num 
+group by  dd.driver_license_num, fw.issue_dt
+having sum(fw.work_end_dt - fw.work_start_dt) > '07:00:00'
+order by issue_dt
