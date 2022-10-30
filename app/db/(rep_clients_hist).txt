@@ -1,0 +1,43 @@
+with t as  (
+select  
+	replace(card_num, ' ', '') card_num,
+	start_dt, end_dt,
+	deleted_flag,
+	phone_num
+from dim_clients
+) ,
+t2 as (
+select 
+
+	ride_id, 
+	max(price_amt) price_amt,
+	max(client_phone_num) client_phone_num,
+	max(deleted_flag) deleted_flag,
+	max(start_dt) start_dt,
+	max(end_dt) end_dt, 
+	max(case when transaction_amt > price_amt then null else transaction_id end) transaction_id, 
+	max(case when transaction_amt > price_amt then null else transaction_amt end) transaction_amt,
+	max(fr.ride_start_dt) ride_start_dt
+	
+from fact_rides fr 
+left join t dm on fr.client_phone_num =dm.phone_num
+left join fact_payments fp on dm.card_num  = fp.card_num
+--where client_phone_num ='+7 (900) 034-09-33'
+group by ride_id
+--having fr.ride_id = '12475'
+)
+
+select 
+	client_phone_num,
+	--ride_id,
+	count(ride_id) rides_cnt,
+	sum(case when ride_start_dt is null then 1 else 0 end) cancelled_cnt,
+	--count(case when ride_start_dt is null then 1 else 0 end) cancelled_cnt,
+	sum(case when transaction_id is null then price_amt else 0 end) debt_amt,
+	sum (transaction_amt)  spent_amt,
+	min(start_dt) start_dt
+
+from t2
+group by client_phone_num
+--having ride_id = '12475'
+order by  start_dt

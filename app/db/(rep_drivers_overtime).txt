@@ -1,0 +1,40 @@
+with t1 as (
+select
+	work_start_dt, work_end_dt,driver_pers_num,
+	lag(work_end_dt) over(partition by driver_pers_num order by work_start_dt, work_end_dt) le
+from fact_waybills
+           ),
+		   
+t2 as (
+select
+	 work_start_dt, work_end_dt,driver_pers_num,
+	 case when work_start_dt < max(le) over(order by work_start_dt, work_end_dt) THEN null
+	 else work_start_dt end new_start
+from t1
+),
+
+t3 as (
+select
+     work_start_dt , work_end_dt, driver_pers_num, 
+     max(new_start) over(order by work_start_dt, work_end_dt) left_edge
+from t2),
+
+t4 as (
+select
+	 max(work_end_dt) max_dt,
+	 min(work_start_dt) min_dt,
+	 driver_pers_num
+from t3
+
+group by left_edge, driver_pers_num )
+
+select 
+	driver_pers_num ,
+	min(min_dt) work_start_dt,
+	sum(max_dt - min_dt) work_hours
+
+from t4
+group by
+driver_pers_num
+having sum(max_dt - min_dt) > '07:00:00'
+order by driver_pers_num,work_start_dt
