@@ -5,12 +5,12 @@
 import logging
 
 from db.load_table_data import (load_new_driver_records, load_new_car_records,
-                                load_new_client_records, load_new_rides_records)
+                                load_new_client_records, load_new_rides_records,)
 from db.load_file_data import get_waybills_data, get_payment_data
 from db.upload_table_data import (add_data_to_dim_drivers, add_data_to_cars,
                              add_data_to_clients, add_data_to_payments,
                              add_data_to_waybill, add_data_to_fact_rides,
-                             add_date_to_check_load, check_load)
+                             add_date_to_check_load, check_load,)
 from db.functions import yesterday
 
 

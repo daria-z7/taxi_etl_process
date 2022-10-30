@@ -54,6 +54,7 @@ def load_new_client_records(days_back: int):
                     SELECT *
                     FROM rides
                     WHERE DATE(dt) = (CURRENT_DATE - INTEGER '{days_back}')
+                    ORDER BY dt
                     """
                 )
         query = cur.fetchall()
@@ -94,6 +95,7 @@ def load_new_driver_records(days_back: int):
         'birth_dt'
     ])
     conn.close()
+    df['update_dt'] = df['update_dt'].astype('datetime64[ns]')
     return df
 
 
@@ -136,3 +138,12 @@ def get_arrival_dt(ride_id, event):
     cur.close()
     conn.close()
     return arrival_dt[0] if arrival_dt is not None else arrival_dt
+
+def get_movement():
+    conn = create_conn()
+    cur = conn.cursor()
+    with cur as cur:
+        cur.execute(f"SELECT * FROM movement LIMIT 30")
+        print(cur.fetchall())
+    cur.close()
+    conn.close()

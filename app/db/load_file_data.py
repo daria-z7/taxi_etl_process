@@ -38,12 +38,14 @@ def get_waybills_data(days_back: int):
                 for snode in element.findall('driver'):
                     d_name = snode.find('name').text
                     d_license = snode.find('license').text
-                    pers_num = get_pers_num(str(d_license))
+                    # pers_num = get_pers_num(str(d_license))
                 for snode in element.findall('period'):
                     start_dt = snode.find('start').text
                     end_dt = snode.find('stop').text
+            pers_num = get_pers_num(str(d_license), start_dt)
+            # print(pers_num)
             r.close()
-            df.loc[df.shape[0]] = [waybill_num, pers_num, car_plate_num, start_dt, end_dt, issue_dt]
+            df.loc[df.shape[0]] = [waybill_num.strip(), pers_num, car_plate_num, start_dt, end_dt, issue_dt]
     ftps.quit()
     return df
 

@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 
 import psycopg2
 from dotenv import load_dotenv
@@ -21,19 +22,21 @@ def create_conn():
     return conn
 
 
-def get_pers_num(license: str) -> bool | int:
+def get_pers_num(license: str, act_dt) -> bool | int:
     conn = create_conn()
     cur = conn.cursor()
     with cur as cur:
         cur.execute(f"""SELECT personnel_num
                     FROM dim_drivers
-                    WHERE driver_license_num LIKE '{license}'
-                    ORDER BY personnel_num DESC
+                    WHERE driver_license_num = '{license}' AND start_dt <= '{act_dt}'
+                    ORDER BY personnel_num
                     LIMIT 1""")
         pers_num = cur.fetchone()
     cur.close()
     conn.close()
-    return False if pers_num is None else pers_num[0]
+    # if pers_num is None:
+    #     print(f'{license}, start_dt = {act_dt}')
+    return 2147483647 if pers_num is None else pers_num[0]
 
 def get_last_trans_id() -> int:
     conn = create_conn()
@@ -84,6 +87,15 @@ def get_all_clients():
     cur = conn.cursor()
     with cur as cur:
         cur.execute(f"SELECT * FROM dim_clients")
+        print(cur.fetchall())
+    cur.close()
+    conn.close()
+
+def get_all_dim_drivers():
+    conn = create_conn()
+    cur = conn.cursor()
+    with cur as cur:
+        cur.execute(f"SELECT * FROM dim_drivers")
         print(cur.fetchall())
     cur.close()
     conn.close()
@@ -178,7 +190,10 @@ def add_data_to_cars(df: list):
                                SET end_dt = %s
                                WHERE plate_num = %s AND end_dt is NULL
                                """
-                cur.execute(update_query, (row['update_dt'], row['plate_num']))
+                cur.execute(update_query, (
+                    row['update_dt'] - timedelta(seconds=1),
+                    row['plate_num']
+                ))
                 insert_query = """
                                INSERT INTO  dim_cars (plate_num, start_dt, model_name, revision_dt, deleted_flag)
                                VALUES (%s,%s,%s,%s,%s)
@@ -232,7 +247,10 @@ def add_data_to_clients(df: list):
                                SET end_dt = %s
                                WHERE phone_num = %s AND end_dt is NULL
                                """
-                cur.execute(update_query, (row['dt'], row['client_phone']))
+                cur.execute(update_query, (
+                    row['dt'] - timedelta(seconds=1),
+                    row['client_phone']
+                ))
                 insert_query = """
                             INSERT INTO  dim_clients (phone_num, start_dt, card_num, deleted_flag)
                             VALUES (%s,%s,%s,%s)
@@ -262,7 +280,7 @@ def check_drivers_record_exists(driver_license_num) -> bool:
         cur.execute(f"""
                     SELECT card_num
                     FROM dim_drivers
-                    WHERE driver_license_num LIKE '{driver_license_num}'
+                    WHERE driver_license_num = '{driver_license_num}'
                     ORDER BY personnel_num DESC
                     LIMIT 1
                     """
@@ -301,7 +319,10 @@ def add_data_to_dim_drivers(df: list):
                                SET end_dt = %s
                                WHERE driver_license_num = %s AND end_dt is Null
                                """
-                cur.execute(update_query, (row['update_dt'], row['driver_license_num']))
+                cur.execute(update_query, (
+                    row['update_dt'] - timedelta(seconds=1),
+                    row['driver_license_num']
+                ))
                 insert_query = """
                                INSERT INTO  dim_drivers (start_dt, last_name, first_name, middle_name, birth_dt, card_num, driver_license_num, driver_license_dt)
                                VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
@@ -327,14 +348,14 @@ def add_data_to_dim_drivers(df: list):
     return
 
 
-def get_personnel_num(car_plate_num: str) -> int:
+def get_personnel_num(car_plate_num: str, arr_dt) -> int:
     conn = create_conn()
     cur = conn.cursor()
     with cur as cur:
         cur.execute(f"""
                     SELECT driver_pers_num
                     FROM fact_waybills
-                    WHERE car_plate_num='{car_plate_num}'
+                    WHERE car_plate_num='{car_plate_num}' AND work_start_dt <= '{arr_dt}' AND work_end_dt >= '{arr_dt}'
                     """
                 )
         personnel_num = cur.fetchone()
@@ -350,7 +371,10 @@ def add_data_to_fact_rides(df: list):
         for index, row in df.iterrows():
             arrival_dt = get_arrival_dt(row['ride_id'], 'READY')
             start_dt = get_arrival_dt(row['ride_id'], 'BEGIN')
-            personnel_num = get_personnel_num(row['car_plate_num'])
+            personnel_num = get_personnel_num(
+                car_plate_num=row['car_plate_num'],
+                arr_dt=arrival_dt
+            )
             insert_query = """
                         INSERT INTO  fact_rides (ride_id, point_from_txt, point_to_txt, distance_val, price_amt, client_phone_num, driver_pers_num, car_plate_num, ride_arrival_dt, ride_start_dt, ride_end_dt)
                         VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
