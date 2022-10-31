@@ -22,10 +22,10 @@ def load_data_for_overtime():
                                 lag(work_end_dt) over(partition by driver_pers_num order by work_start_dt, work_end_dt) le
                         from fact_waybills
                                    ),
-                        		   
+                             
                         t2 as (
                         select  work_start_dt, work_end_dt, driver_pers_num,
-                             	case when work_start_dt < max(le) over(order by work_start_dt, work_end_dt) 
+                              case when work_start_dt < max(le) over(order by work_start_dt, work_end_dt) 
                                 THEN null else work_start_dt
                                 end new_start
                         from t1
@@ -36,10 +36,12 @@ def load_data_for_overtime():
                         from t2
                         ),
                         
-                        t4 as (select max(work_end_dt) max_dt, min(work_start_dt) min_dt, driver_pers_num
+                        t4 as (select 
+                               case when (EXTRACT (day FROM  work_end_dt) - EXTRACT(day FROM  work_start_dt)) =1 then min(work_end_dt) else max(work_end_dt) end max_dt,
+                               min(work_start_dt) min_dt, driver_pers_num
                         from t3
                         
-                        group by left_edge, driver_pers_num)
+                        group by left_edge, driver_pers_num,work_start_dt,work_end_dt)
                         
                         select driver_pers_num, min(min_dt) work_start_dt, sum(max_dt - min_dt) work_hours
                         from t4
