@@ -1,6 +1,7 @@
 """Главный скрипт ETL процесса.
 Настроено логирование основных событий и ошибок.
-Выполняется считывание данных из базы-источника и заполнение таблиц базы-хранилища.
+1)Выполняется считывание данных из базы-источника и заполнение таблиц базы-хранилища.
+2)Выполняется составление 4 отчетов.
 """
 import logging
 
@@ -10,7 +11,11 @@ from db.load_file_data import get_waybills_data, get_payment_data
 from db.upload_table_data import (add_data_to_dim_drivers, add_data_to_cars,
                              add_data_to_clients, add_data_to_payments,
                              add_data_to_waybill, add_data_to_fact_rides,
-                             add_date_to_check_load, check_load,)
+                             add_date_to_check_load, check_load,
+                             load_fio_drivers_card_amt, add_data_to_rep_drivers_payments,
+                             load_speed_cnt_violations, add_data_to_rep_drivers_violations,
+                             load_data_for_overtime, add_data_to_rep_drivers_overtime,
+                             load_clients_hist, add_data_to_rep_clients_hist)
 from db.functions import yesterday
 
 
@@ -90,6 +95,42 @@ def load_data(days_back: int):
         add_date_to_check_load(yesterday_dt)
     except Exception as error:
         logging.error(f'Ошибка при записи данных в work_load_info: {error}')
+        return
+    
+    try:
+        """Ежедневная витрина - выплата водителям."""
+        df_payments = load_fio_drivers_card_amt(days_back=days_back)
+        add_data_to_rep_drivers_payments(df=df_payments, days_back=days_back)
+        logging.info(f'Данные rep_drivers_payments загружены ({yesterday_dt}).')
+    except Exception as error:
+        logging.error(f'Ошибка при составлении отчета rep_drivers_payments: {error}')
+        return
+    
+    try:
+        """Ежедневная витрина - водители нарушители."""
+        df_violations = load_speed_cnt_violations()
+        add_data_to_rep_drivers_violations(df=df_violations)
+        logging.info(f'Данные rep_drivers_violations загружены ({yesterday_dt}).')
+    except Exception as error:
+        logging.error(f'Ошибка при составлении отчета rep_drivers_violations: {error}')
+        return
+    
+    try:
+        """Ежедневная витрина - перерабатывающие водители."""
+        df_overtime = load_data_for_overtime()
+        add_data_to_rep_drivers_overtime(df=df_overtime)
+        logging.info(f'Данные rep_drivers_overtime загружены ({yesterday_dt}).')
+    except Exception as error:
+        logging.error(f'Ошибка при составлении отчета rep_drivers_overtime: {error}')
+        return
+    
+    try:
+        """Историчная витрина - знай своего клиента."""
+        df_clients_hist = load_clients_hist()
+        add_data_to_rep_clients_hist(df=df_clients_hist)
+        logging.info(f'Данные rep_drivers_overtime загружены ({yesterday_dt}).')
+    except Exception as error:
+        logging.error(f'Ошибка при составлении отчета rep_drivers_overtime: {error}')
         return
 
     return
