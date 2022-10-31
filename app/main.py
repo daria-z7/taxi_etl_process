@@ -128,9 +128,9 @@ def load_data(days_back: int):
         """Историчная витрина - знай своего клиента."""
         df_clients_hist = load_clients_hist()
         add_data_to_rep_clients_hist(df=df_clients_hist)
-        logging.info(f'Данные rep_drivers_overtime загружены ({yesterday_dt}).')
+        logging.info(f'Данные rep_clients_hist загружены ({yesterday_dt}).')
     except Exception as error:
-        logging.error(f'Ошибка при составлении отчета rep_drivers_overtime: {error}')
+        logging.error(f'Ошибка при составлении отчета rep_clients_hist: {error}')
         return
 
     return
